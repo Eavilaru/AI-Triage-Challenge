@@ -1,0 +1,133 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Reporte Consolidado AI Triage</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .container { max_width: 900px; margin: auto; }
+                .header { background-color: #f4f4f4; padding: 10px; border-radius: 5px; margin-top:30px; }
+                .section { margin-left: 10px; }
+                .critical { color: red; font-weight:bold; }
+                .high { color: orange; font-weight:bold; }
+                .medium { color: #b8860b; font-weight:bold; }
+                .low { color: green; font-weight:bold; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Reporte de Vulnerabilidades</h1>
+                <p>Total analizado: 4</p>
+                
+            <div class="header">
+                <h2>vuln_01 <span style="font-size:0.6em; color:#666">source:19 -> sink:23</span></h2>
+                <p><strong>Clasificación:</strong> True Positive | <strong>Severidad:</strong> <span class="high">High</span></p>
+            </div>
+            <div class="section">
+                <h3>Justificación</h3>
+                <p>El código en la función 'login' forma parte de un patrón clásico de Inyección SQL donde los valores 'username' y 'password' son directamente interpolados en una declaración SQL sin ningún tipo de validación o sanitización. Esto abre la oportunidad para que un atacante manipule las entradas para cambiar el significado de la consulta SQL. Dado que no se ha encontrado ninguna medida de sanitización en el código proporcionado, el riesgo de explotación es alto, resultando en una clasificación de Alta severidad.</p>
+                
+                <h3>Traza</h3>
+                <ul>
+                     <li><strong>Flujo:</strong> username, password, sql_query</li>
+                </ul>
+
+                <h3>Sanitizers/Validadores</h3>
+                <ul>
+                    <li>No detectados</li>
+                </ul>
+
+                
+                
+                <h3>Supuestos</h3>
+                <ul>
+                    <li>Se asume que 'username' y 'password' son valores proporcionados por el usuario sin ninguna validación o sanitización previa.</li>
+                </ul>
+                <hr>
+            </div>
+            
+            <div class="header">
+                <h2>vuln_02 <span style="font-size:0.6em; color:#666">source:29 -> sink:32</span></h2>
+                <p><strong>Clasificación:</strong> False Positive | <strong>Severidad:</strong> <span class="low">Low</span></p>
+            </div>
+            <div class="section">
+                <h3>Justificación</h3>
+                <p>La función 'new_login' utiliza consultas parametrizadas al interactuar con la base de datos. Las consultas parametrizadas, al emplear un marcador de posición (?, ?), aseguran que los valores proporcionados por el usuario ('username' y 'password') sean manejados como parámetros, eliminando así el riesgo de inyección de SQL. Dado que este mecanismo adecuado de sanitización está presente, clasificamos este hallazgo como un falso positivo.</p>
+                
+                <h3>Traza</h3>
+                <ul>
+                     <li><strong>Flujo:</strong> username, password, cur.execute</li>
+                </ul>
+
+                <h3>Sanitizers/Validadores</h3>
+                <ul>
+                    <li>Parameterized query (Línea 31)</li>
+                </ul>
+
+                <h3>Contraejemplo</h3><p>Cualquier intento de inyeccion SQL como 'admin' OR '1'='1' no resultaria en una ejecucion de inyeccion debido al uso de consultas parametrizadas que correctamente tratan los datos del usuario como parametros.</p>
+                
+                <h3>Supuestos</h3>
+                <ul>
+                    <li>El objeto 'con' es una conexión válida a una base de datos SQLite3.</li><li>Se está utilizando correctamente la interpolación de parámetros con el cursor de la base de datos.</li>
+                </ul>
+                <hr>
+            </div>
+            
+            <div class="header">
+                <h2>vuln_03 <span style="font-size:0.6em; color:#666">source:39 -> sink:40</span></h2>
+                <p><strong>Clasificación:</strong> True Positive | <strong>Severidad:</strong> <span class="medium">Medium</span></p>
+            </div>
+            <div class="section">
+                <h3>Justificación</h3>
+                <p>El análisis del código muestra que el parámetro 'username' se inserta directamente en una URL utilizada en la función 'requests.get', lo que permite a un atacante potencial manipular la solicitud HTTP enviada por la aplicación. Como no se realiza validación o sanitización del input 'username', se confirma la existencia de una vulnerabilidad SSRF.</p>
+                
+                <h3>Traza</h3>
+                <ul>
+                     <li><strong>Flujo:</strong> username</li>
+                </ul>
+
+                <h3>Sanitizers/Validadores</h3>
+                <ul>
+                    <li>No detectados</li>
+                </ul>
+
+                
+                
+                <h3>Supuestos</h3>
+                <ul>
+                    <li>Se asume que el valor de 'username' es controlado por el usuario, ya que es un parámetro de entrada de la función 'check_username'.</li>
+                </ul>
+                <hr>
+            </div>
+            
+            <div class="header">
+                <h2>vuln_04 <span style="font-size:0.6em; color:#666">source:44 -> sink:46</span></h2>
+                <p><strong>Clasificación:</strong> True Positive | <strong>Severidad:</strong> <span class="high">High</span></p>
+            </div>
+            <div class="section">
+                <h3>Justificación</h3>
+                <p>La función is_online_username utiliza el módulo os para ejecutar comandos del sistema operativo sin ninguna validación o saneamiento de la variable username, lo que permite una inyección de comandos directamente. No se detectaron sanitizadores entre el punto de entrada y el punto vulnerable. Esto clasifica la vulnerabilidad como un verdadero positivo de alto riesgo, ya que permite la ejecución de comandos arbitrarios en el sistema.</p>
+                
+                <h3>Traza</h3>
+                <ul>
+                     <li><strong>Flujo:</strong> username, os.system(f"touch /tmp/{username}")</li>
+                </ul>
+
+                <h3>Sanitizers/Validadores</h3>
+                <ul>
+                    <li>No detectados</li>
+                </ul>
+
+                
+                
+                <h3>Supuestos</h3>
+                <ul>
+                    <li>Se asume que la función is_online_username se utiliza directamente con entradas controladas por el usuario.</li>
+                </ul>
+                <hr>
+            </div>
+            
+            </div>
+        </body>
+        </html>
+        

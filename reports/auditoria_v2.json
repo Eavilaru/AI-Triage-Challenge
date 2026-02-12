@@ -1,0 +1,104 @@
+[
+  {
+    "id": "vuln_v2_01",
+    "classification": "False Positive",
+    "severity": "Low",
+    "trace": {
+      "file": "sample/sample_v2.py",
+      "function": "get_user_data_safe",
+      "source_line": 8,
+      "sink_line": 14,
+      "flow": [
+        "user_id",
+        "query = \"SELECT * FROM users WHERE id = ?\"",
+        "cursor.execute(query, (user_id,))"
+      ]
+    },
+    "sanitizers": [
+      {
+        "name": "Parameterized Query",
+        "line": 14,
+        "sufficient": true,
+        "explanation": "El uso de consultas parametrizadas (usando '?' y una tupla para los par\u00e1metros) evita inyecciones SQL al asegurarse de que las entradas del usuario no se traten como c\u00f3digo SQL. Esto convierte la entrada en un par\u00e1metro seguro."
+      }
+    ],
+    "assumptions": [
+      "La funci\u00f3n get_user_data_safe utiliza un cursor de sqlite3 que soporta consultas parametrizadas de manera segura.",
+      "La conexi\u00f3n con la base de datos est\u00e1 debidamente establecida y gestionada por sqlite3, que es segura para consultas parametrizadas."
+    ],
+    "justification": "El an\u00e1lisis del c\u00f3digo revela que se usa una consulta parametrizada con '?' y un par\u00e1metro tupla para ejecutar la consulta SQL. Esto proporciona un mecanismo de protecci\u00f3n adecuado contra la inyecci\u00f3n SQL, puesto que el par\u00e1metro se trata como un dato, no como un c\u00f3digo ejecutable.",
+    "counterexample": "Incluso si el usuario proporciona una entrada malintencionada, la consulta parametrizada garantiza que no se combine con el c\u00f3digo SQL, previniendo as\u00ed la explotaci\u00f3n de inyecci\u00f3n SQL."
+  },
+  {
+    "id": "vuln_v2_02",
+    "classification": "True Positive",
+    "severity": "High",
+    "trace": {
+      "file": "sample/sample_v2.py",
+      "function": "health_check_unsafe",
+      "source_line": 17,
+      "sink_line": 21,
+      "flow": [
+        "ip_address"
+      ]
+    },
+    "sanitizers": [],
+    "assumptions": [
+      "El input 'ip_address' es controlado por el usuario."
+    ],
+    "justification": "El c\u00f3digo en la funci\u00f3n 'health_check_unsafe' toma un input controlado por el usuario, 'ip_address', y lo inserta directamente en un comando de shell utilizando 'subprocess.run' con 'shell=True'. Esto crea una vulnerabilidad de Command Injection, ya que un atacante puede inyectar comandos adicionales escapando la entrada, dado que no hay ninguna validaci\u00f3n o sanitizaci\u00f3n de la variable 'ip_address'. No se encontraron mecanismos de sanitizaci\u00f3n que validen adecuadamente la entrada para prevenir la inyecci\u00f3n de comandos.",
+    "counterexample": null
+  },
+  {
+    "id": "vuln_v2_03",
+    "classification": "True Positive",
+    "severity": "High",
+    "trace": {
+      "file": "sample/sample_v2.py",
+      "function": "fetch_external_status",
+      "source_line": 23,
+      "sink_line": 28,
+      "flow": [
+        "node_url (parameter)",
+        "url construction",
+        "requests.get(url)"
+      ]
+    },
+    "sanitizers": [],
+    "assumptions": [
+      "El input proporcionado a fetch_external_status proviene de una fuente no confiable o puede ser manipulado por un atacante."
+    ],
+    "justification": "La funci\u00f3n 'fetch_external_status' toma un par\u00e1metro 'node_url', que se utiliza directamente para construir la URL de una solicitud HTTP sin ning\u00fan tipo de validaci\u00f3n o sanitizaci\u00f3n. Esto permite que un atacante pueda manipular el 'node_url' para realizar un SSRF (Server-Side Request Forgery) hacia cualquier destino que el servidor pueda acceder, lo cual representa un riesgo alto de seguridad.",
+    "counterexample": null
+  },
+  {
+    "id": "vuln_v2_04",
+    "classification": "False Positive",
+    "severity": "Low",
+    "trace": {
+      "file": "sample/sample_v2.py",
+      "function": "show_profile_safe",
+      "source_line": 30,
+      "sink_line": 35,
+      "flow": [
+        "name (user input)",
+        "clean_name = html.escape(name)",
+        "render_template_string(f\"<div>Hello {clean_name}</div>\")"
+      ]
+    },
+    "sanitizers": [
+      {
+        "name": "html.escape",
+        "line": 33,
+        "sufficient": true,
+        "explanation": "La funci\u00f3n html.escape se utiliza para escapar caracteres especiales de HTML (&, <, >, \") en el input del usuario, previniendo as\u00ed la inyecci\u00f3n de scripts o cualquier otro c\u00f3digo HTML. Este es un m\u00e9todo est\u00e1ndar y efectivo para mitigar ataques XSS."
+      }
+    ],
+    "assumptions": [
+      "El input proporcionado en la variable 'name' es controlado por el usuario.",
+      "El entorno donde se renderiza la plantilla utiliza la funci\u00f3n render_template_string de Jinja2 o similar."
+    ],
+    "justification": "El hallazgo de XSS fue clasificado como falso positivo porque la entrada del usuario se escapa adecuadamente usando la funci\u00f3n html.escape antes de ser renderizada en la plantilla. Este m\u00e9todo de escape es una pr\u00e1ctica est\u00e1ndar para prevenir ataques XSS al asegurarse de que cualquier car\u00e1cter especial en la entrada del usuario no se traduzca en HTML ejecutable.",
+    "counterexample": "La funci\u00f3n html.escape asegura que caracteres potencialmente peligrosos se conviertan en entidades HTML, por lo tanto, incluso si el usuario intenta inyectar c\u00f3digo malicioso como <script>alert(1)</script>, ser\u00e1 renderizado como &lt;script&gt;alert(1)&lt;/script&gt;, lo que demuestra que el ataque XSS no se puede llevar a cabo."
+  }
+]

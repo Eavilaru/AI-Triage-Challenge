@@ -1,0 +1,32 @@
+{
+    "vulnerabilities": [
+        {
+            "id": "vuln_v2_01",
+            "type": "SQL Injection",
+            "sink_line": 14,
+            "source_line": 8,
+            "message": "Potential SQL Injection in get_user_data_safe. The query is constructed using a parameter."
+        },
+        {
+            "id": "vuln_v2_02",
+            "type": "Command Injection",
+            "sink_line": 21,
+            "source_line": 17,
+            "message": "Potential Command Injection in health_check_unsafe. User input is used in subprocess."
+        },
+        {
+            "id": "vuln_v2_03",
+            "type": "SSRF",
+            "sink_line": 28,
+            "source_line": 23,
+            "message": "Potential SSRF in fetch_external_status. User input is used in URL."
+        },
+        {
+            "id": "vuln_v2_04",
+            "type": "XSS",
+            "sink_line": 35,
+            "source_line": 30,
+            "message": "Potential XSS in show_profile_safe. User input is rendered in template."
+        }
+    ]
+}

@@ -1,0 +1,133 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Reporte Consolidado AI Triage</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .container { max_width: 900px; margin: auto; }
+                .header { background-color: #f4f4f4; padding: 10px; border-radius: 5px; margin-top:30px; }
+                .section { margin-left: 10px; }
+                .critical { color: red; font-weight:bold; }
+                .high { color: orange; font-weight:bold; }
+                .medium { color: #b8860b; font-weight:bold; }
+                .low { color: green; font-weight:bold; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Reporte de Vulnerabilidades</h1>
+                <p>Total analizado: 4</p>
+                
+            <div class="header">
+                <h2>vuln_v2_01 <span style="font-size:0.6em; color:#666">source:8 -> sink:14</span></h2>
+                <p><strong>Clasificación:</strong> False Positive | <strong>Severidad:</strong> <span class="low">Low</span></p>
+            </div>
+            <div class="section">
+                <h3>Justificación</h3>
+                <p>El análisis del código revela que se usa una consulta parametrizada con '?' y un parámetro tupla para ejecutar la consulta SQL. Esto proporciona un mecanismo de protección adecuado contra la inyección SQL, puesto que el parámetro se trata como un dato, no como un código ejecutable.</p>
+                
+                <h3>Traza</h3>
+                <ul>
+                     <li><strong>Flujo:</strong> user_id, query = "SELECT * FROM users WHERE id = ?", cursor.execute(query, (user_id,))</li>
+                </ul>
+
+                <h3>Sanitizers/Validadores</h3>
+                <ul>
+                    <li>Parameterized Query (Línea 14)</li>
+                </ul>
+
+                <h3>Contraejemplo</h3><p>Incluso si el usuario proporciona una entrada malintencionada, la consulta parametrizada garantiza que no se combine con el código SQL, previniendo así la explotación de inyección SQL.</p>
+                
+                <h3>Supuestos</h3>
+                <ul>
+                    <li>La función get_user_data_safe utiliza un cursor de sqlite3 que soporta consultas parametrizadas de manera segura.</li><li>La conexión con la base de datos está debidamente establecida y gestionada por sqlite3, que es segura para consultas parametrizadas.</li>
+                </ul>
+                <hr>
+            </div>
+            
+            <div class="header">
+                <h2>vuln_v2_02 <span style="font-size:0.6em; color:#666">source:17 -> sink:21</span></h2>
+                <p><strong>Clasificación:</strong> True Positive | <strong>Severidad:</strong> <span class="high">High</span></p>
+            </div>
+            <div class="section">
+                <h3>Justificación</h3>
+                <p>El código en la función 'health_check_unsafe' toma un input controlado por el usuario, 'ip_address', y lo inserta directamente en un comando de shell utilizando 'subprocess.run' con 'shell=True'. Esto crea una vulnerabilidad de Command Injection, ya que un atacante puede inyectar comandos adicionales escapando la entrada, dado que no hay ninguna validación o sanitización de la variable 'ip_address'. No se encontraron mecanismos de sanitización que validen adecuadamente la entrada para prevenir la inyección de comandos.</p>
+                
+                <h3>Traza</h3>
+                <ul>
+                     <li><strong>Flujo:</strong> ip_address</li>
+                </ul>
+
+                <h3>Sanitizers/Validadores</h3>
+                <ul>
+                    <li>No detectados</li>
+                </ul>
+
+                
+                
+                <h3>Supuestos</h3>
+                <ul>
+                    <li>El input 'ip_address' es controlado por el usuario.</li>
+                </ul>
+                <hr>
+            </div>
+            
+            <div class="header">
+                <h2>vuln_v2_03 <span style="font-size:0.6em; color:#666">source:23 -> sink:28</span></h2>
+                <p><strong>Clasificación:</strong> True Positive | <strong>Severidad:</strong> <span class="high">High</span></p>
+            </div>
+            <div class="section">
+                <h3>Justificación</h3>
+                <p>La función 'fetch_external_status' toma un parámetro 'node_url', que se utiliza directamente para construir la URL de una solicitud HTTP sin ningún tipo de validación o sanitización. Esto permite que un atacante pueda manipular el 'node_url' para realizar un SSRF (Server-Side Request Forgery) hacia cualquier destino que el servidor pueda acceder, lo cual representa un riesgo alto de seguridad.</p>
+                
+                <h3>Traza</h3>
+                <ul>
+                     <li><strong>Flujo:</strong> node_url (parameter), url construction, requests.get(url)</li>
+                </ul>
+
+                <h3>Sanitizers/Validadores</h3>
+                <ul>
+                    <li>No detectados</li>
+                </ul>
+
+                
+                
+                <h3>Supuestos</h3>
+                <ul>
+                    <li>El input proporcionado a fetch_external_status proviene de una fuente no confiable o puede ser manipulado por un atacante.</li>
+                </ul>
+                <hr>
+            </div>
+            
+            <div class="header">
+                <h2>vuln_v2_04 <span style="font-size:0.6em; color:#666">source:30 -> sink:35</span></h2>
+                <p><strong>Clasificación:</strong> False Positive | <strong>Severidad:</strong> <span class="low">Low</span></p>
+            </div>
+            <div class="section">
+                <h3>Justificación</h3>
+                <p>El hallazgo de XSS fue clasificado como falso positivo porque la entrada del usuario se escapa adecuadamente usando la función html.escape antes de ser renderizada en la plantilla. Este método de escape es una práctica estándar para prevenir ataques XSS al asegurarse de que cualquier carácter especial en la entrada del usuario no se traduzca en HTML ejecutable.</p>
+                
+                <h3>Traza</h3>
+                <ul>
+                     <li><strong>Flujo:</strong> name (user input), clean_name = html.escape(name), render_template_string(f"<div>Hello {clean_name}</div>")</li>
+                </ul>
+
+                <h3>Sanitizers/Validadores</h3>
+                <ul>
+                    <li>html.escape (Línea 33)</li>
+                </ul>
+
+                <h3>Contraejemplo</h3><p>La función html.escape asegura que caracteres potencialmente peligrosos se conviertan en entidades HTML, por lo tanto, incluso si el usuario intenta inyectar código malicioso como <script>alert(1)</script>, será renderizado como &lt;script&gt;alert(1)&lt;/script&gt;, lo que demuestra que el ataque XSS no se puede llevar a cabo.</p>
+                
+                <h3>Supuestos</h3>
+                <ul>
+                    <li>El input proporcionado en la variable 'name' es controlado por el usuario.</li><li>El entorno donde se renderiza la plantilla utiliza la función render_template_string de Jinja2 o similar.</li>
+                </ul>
+                <hr>
+            </div>
+            
+            </div>
+        </body>
+        </html>
+        

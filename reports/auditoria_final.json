@@ -1,0 +1,95 @@
+[
+  {
+    "id": "vuln_01",
+    "classification": "True Positive",
+    "severity": "High",
+    "trace": {
+      "file": "sample/sample.py",
+      "function": "login",
+      "source_line": 19,
+      "sink_line": 23,
+      "flow": [
+        "username",
+        "password",
+        "sql_query"
+      ]
+    },
+    "sanitizers": [],
+    "assumptions": [
+      "Se asume que 'username' y 'password' son valores proporcionados por el usuario sin ninguna validaci\u00f3n o sanitizaci\u00f3n previa."
+    ],
+    "justification": "El c\u00f3digo en la funci\u00f3n 'login' forma parte de un patr\u00f3n cl\u00e1sico de Inyecci\u00f3n SQL donde los valores 'username' y 'password' son directamente interpolados en una declaraci\u00f3n SQL sin ning\u00fan tipo de validaci\u00f3n o sanitizaci\u00f3n. Esto abre la oportunidad para que un atacante manipule las entradas para cambiar el significado de la consulta SQL. Dado que no se ha encontrado ninguna medida de sanitizaci\u00f3n en el c\u00f3digo proporcionado, el riesgo de explotaci\u00f3n es alto, resultando en una clasificaci\u00f3n de Alta severidad.",
+    "counterexample": null
+  },
+  {
+    "id": "vuln_02",
+    "classification": "False Positive",
+    "severity": "Low",
+    "trace": {
+      "file": "sample/sample.py",
+      "function": "new_login",
+      "source_line": 29,
+      "sink_line": 32,
+      "flow": [
+        "username",
+        "password",
+        "cur.execute"
+      ]
+    },
+    "sanitizers": [
+      {
+        "name": "Parameterized query",
+        "line": 31,
+        "sufficient": true,
+        "explanation": "La consulta SQL utiliza una consulta parametrizada, lo que previene la inyecci\u00f3n de SQL porque los valores de 'username' y 'password' son tratados como par\u00e1metros en lugar de ser insertados directamente en la consulta SQL."
+      }
+    ],
+    "assumptions": [
+      "El objeto 'con' es una conexi\u00f3n v\u00e1lida a una base de datos SQLite3.",
+      "Se est\u00e1 utilizando correctamente la interpolaci\u00f3n de par\u00e1metros con el cursor de la base de datos."
+    ],
+    "justification": "La funci\u00f3n 'new_login' utiliza consultas parametrizadas al interactuar con la base de datos. Las consultas parametrizadas, al emplear un marcador de posici\u00f3n (?, ?), aseguran que los valores proporcionados por el usuario ('username' y 'password') sean manejados como par\u00e1metros, eliminando as\u00ed el riesgo de inyecci\u00f3n de SQL. Dado que este mecanismo adecuado de sanitizaci\u00f3n est\u00e1 presente, clasificamos este hallazgo como un falso positivo.",
+    "counterexample": "Cualquier intento de inyeccion SQL como 'admin' OR '1'='1' no resultaria en una ejecucion de inyeccion debido al uso de consultas parametrizadas que correctamente tratan los datos del usuario como parametros."
+  },
+  {
+    "id": "vuln_03",
+    "classification": "True Positive",
+    "severity": "Medium",
+    "trace": {
+      "file": "sample/sample.py",
+      "function": "check_username",
+      "source_line": 39,
+      "sink_line": 40,
+      "flow": [
+        "username"
+      ]
+    },
+    "sanitizers": [],
+    "assumptions": [
+      "Se asume que el valor de 'username' es controlado por el usuario, ya que es un par\u00e1metro de entrada de la funci\u00f3n 'check_username'."
+    ],
+    "justification": "El an\u00e1lisis del c\u00f3digo muestra que el par\u00e1metro 'username' se inserta directamente en una URL utilizada en la funci\u00f3n 'requests.get', lo que permite a un atacante potencial manipular la solicitud HTTP enviada por la aplicaci\u00f3n. Como no se realiza validaci\u00f3n o sanitizaci\u00f3n del input 'username', se confirma la existencia de una vulnerabilidad SSRF.",
+    "counterexample": null
+  },
+  {
+    "id": "vuln_04",
+    "classification": "True Positive",
+    "severity": "High",
+    "trace": {
+      "file": "sample/sample.py",
+      "function": "is_online_username",
+      "source_line": 44,
+      "sink_line": 46,
+      "flow": [
+        "username",
+        "os.system(f\"touch /tmp/{username}\")"
+      ]
+    },
+    "sanitizers": [],
+    "assumptions": [
+      "Se asume que la funci\u00f3n is_online_username se utiliza directamente con entradas controladas por el usuario."
+    ],
+    "justification": "La funci\u00f3n is_online_username utiliza el m\u00f3dulo os para ejecutar comandos del sistema operativo sin ninguna validaci\u00f3n o saneamiento de la variable username, lo que permite una inyecci\u00f3n de comandos directamente. No se detectaron sanitizadores entre el punto de entrada y el punto vulnerable. Esto clasifica la vulnerabilidad como un verdadero positivo de alto riesgo, ya que permite la ejecuci\u00f3n de comandos arbitrarios en el sistema.",
+    "counterexample": null
+  }
+]

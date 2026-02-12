@@ -50,12 +50,7 @@ class ToolRegistry:
         try:
             # Parse arguments
             args = json.loads(arguments_json)
-            # Find the input model from the registered tool? 
-            # Ideally we'd store the model too, but for now we assume the tool handles dict or we need to wrap it.
-            # actually, the existing tools take a Pydantic model as input.
-            # So we need to handle that instantiation.
-            
-            # Let's adjust register to store the model too.
+
             pass 
         except Exception as e:
             return f"Error executing tool '{name}': {str(e)}"
